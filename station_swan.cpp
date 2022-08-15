@@ -16,6 +16,7 @@ System::System() : lines(0) {
     set_font("../ttf/ModernDOS8x8.ttf");
     set_cursor_settings(L"\u25a0", 50);
     set_input_settings();
+    set_system_message_settings();
     set_system_welcome(">:", 30);
     set_position(get_resolution());
     background.setColor(sf::Color::Black);
@@ -67,7 +68,8 @@ void System::system_start() {
         main.clear();
         main.draw(background);
         main.draw(system_welcome);
-        input(event);
+        input(event);     // input function (cursor + keyboard)
+        system_commands();
         main.display();
     }
 
@@ -83,6 +85,7 @@ sf::RenderWindow window::set_main() const {
             //other resolution...
         }
     }
+    return sf::RenderWindow(sf::VideoMode(1920, 1080), "Station Swan", sf::Style::Fullscreen);
 }
 
 void System::input(sf::Event _event) {
@@ -106,23 +109,42 @@ void System::input(sf::Event _event) {
                         str.pop_back();
                     }
                     if (*(str.end() - 1) == '\n') {
-                        cursor_symbol.setPosition(cursor_symbol.getPosition().x + 1800,
-                                                  cursor_symbol.getPosition().y - 15);
                         str.pop_back();
                         lines -= 1;
+                        cursor_symbol.setPosition(cursor_symbol.getPosition().x +
+                                                       ((static_cast<float>(str.size()-str.find_last_of('\n')-2))*15)+15,
+                                                  cursor_symbol.getPosition().y - 15);
+
                         backspace = true;
                     }
 
                 }
-//lines
-                if((str.size() - lines) % 120 == 0 &&
-                   (str.size() - lines) != 0 &&
-                                        !backspace){
-                    lines += 1;
-                    cursor_symbol.setPosition(cursor_symbol.getPosition().x - 1800,
-                                              cursor_symbol.getPosition().y+15); //cursor
+//enter
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+                    unsigned long long last_space = -1;
+                    if(lines != 0){
+                     last_space = str.find_last_of('\n');
+                    }
                     str.push_back('\n');
+                    lines += 1;
+                    cursor_symbol.setPosition(cursor_symbol.getPosition().x-
+                                                        ((static_cast<float>(str.find_last_of('\n')-last_space))*15)+15,
+                                              cursor_symbol.getPosition().y+15); //cursor
 
+                }
+
+//lines
+                if(cursor_symbol.getPosition().x == 1860 &&
+                                                !backspace){
+                    unsigned long long last_space = -1;
+                    if(lines != 0){
+                        last_space = str.find_last_of('\n');
+                    }
+                    str.push_back('\n');
+                    lines += 1;
+                    cursor_symbol.setPosition(cursor_symbol.getPosition().x-
+                                              ((static_cast<float>(str.find_last_of('\n')-last_space))*15)+15,
+                                              cursor_symbol.getPosition().y+15); //cursor
                 }
 
                 break;
@@ -142,3 +164,20 @@ void System::set_input_settings() {
 input_keyboard.setFont(font);
 input_keyboard.setFillColor(sf::Color::Green);
 }
+
+void System::set_system_message_settings() {
+    system_message.setFont(font);
+    system_message.setFillColor(sf::Color::Red);
+}
+
+void System::system_commands() {
+ if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)){
+     if (str.empty()){
+        m_str = "Invalid command !!!";
+        system_message.setString(m_str);
+        system_message.setPosition(60, cursor_symbol.getPosition().y+100);
+     }
+ }
+ main.draw(system_message);
+}
+
