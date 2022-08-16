@@ -5,6 +5,8 @@
 #ifndef LOST_BUTTON_HEAD_H
 #define LOST_BUTTON_HEAD_H
 
+#define SYMBOL_SIZE1 15
+
 #include <iostream>
 #include <SFML/Graphics.hpp>
 
@@ -30,6 +32,11 @@ private:
     sf::Clock system_time;
     sf::Sprite background;
     int lines;
+    bool admin;
+    bool pass_entered;
+    int bomb_counter;
+    char *bomb;
+
     void set_position(int _resolution);
     void set_font(const std::string& _font);
     void set_cursor_settings(const std::wstring& _cursor, unsigned int size);
@@ -39,9 +46,14 @@ private:
 
     void input(sf::Event _event);
     void system_commands();
+    void time_is_up();
+    void blow_up();
+    void clear_after_pass();
 public:
     System();
+    ~System();
     void system_start();
+    static void system_stop();
 };
 
 

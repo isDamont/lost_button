@@ -12,7 +12,7 @@ int window::get_resolution() const {
 return resolution;
 }
 
-System::System() : lines(0) {
+System::System() : lines(0), admin(false), pass_entered(false), bomb_counter(0), bomb(new char[42]) {
     set_font("../ttf/ModernDOS8x8.ttf");
     set_cursor_settings(L"\u25a0", 50);
     set_input_settings();
@@ -68,8 +68,18 @@ void System::system_start() {
         main.clear();
         main.draw(background);
         main.draw(system_welcome);
+
+        if(system_time.getElapsedTime().asSeconds() > 6240){ //104 minute
         input(event);     // input function (cursor + keyboard)
+        }
+
+        if(static_cast<int>(system_time.getElapsedTime().asSeconds())==6470){time_is_up();} //107 minute and 50 second
+
+        if(static_cast<int>(system_time.getElapsedTime().asSeconds())>6480){blow_up();}  //108 minute
+
         system_commands();
+
+
         main.display();
     }
 
@@ -90,70 +100,81 @@ sf::RenderWindow window::set_main() const {
 
 void System::input(sf::Event _event) {
     bool backspace = false;
-    if (_event.type == sf::Event::TextEntered){
         switch (get_resolution()) {    //type of resolution
             case 19201080:{
+//get cursor back if there's no symbols
+                if (static_cast<float>(str.size()-str.find_last_of('\n')) == 1){
+                    cursor_symbol.setPosition(60,7);
+                }
+
+                if (_event.type == sf::Event::TextEntered){
 //ignore keys
                     if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Backspace) &&
                         !sf::Keyboard::isKeyPressed(sf::Keyboard::Escape) &&
                         !sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
-                        cursor_symbol.setPosition(cursor_symbol.getPosition().x+15,   //15 - one symbol
+                        cursor_symbol.setPosition(cursor_symbol.getPosition().x+SYMBOL_SIZE1,   //SYMBOL_SIZE1 - one symbol
                                                   cursor_symbol.getPosition().y); //cursor
                         str += static_cast<char>(_event.text.unicode);
                     }
 //backspace
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Backspace)) {
-                    if (!str.empty() && *(str.end() - 1) != '\n') {
-                        cursor_symbol.setPosition(cursor_symbol.getPosition().x-15,
-                                                  cursor_symbol.getPosition().y); //cursor
-                        str.pop_back();
+                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Backspace)) {
+                        if (!str.empty() && *(str.end() - 1) != '\n') {
+                            cursor_symbol.setPosition(cursor_symbol.getPosition().x-SYMBOL_SIZE1,
+                                                      cursor_symbol.getPosition().y); //cursor
+                            str.pop_back();
+                        }
+                        if (*(str.end() - 1) == '\n') {
+                            str.pop_back();
+                            lines -= 1;
+                            if (static_cast<float>(str.size()-str.find_last_of('\n')) == 1){  //if there's no symbols in line
+                                cursor_symbol.setPosition(cursor_symbol.getPosition().x,
+                                                          cursor_symbol.getPosition().y - SYMBOL_SIZE1);
+                            }else{
+                                cursor_symbol.setPosition(cursor_symbol.getPosition().x +
+                                                          ((static_cast<float>(str.size()-str.find_last_of('\n')-2))*
+                                                          SYMBOL_SIZE1)+SYMBOL_SIZE1,
+                                                          cursor_symbol.getPosition().y - SYMBOL_SIZE1);
+                            }
+                            backspace = true;
+                        }
                     }
-                    if (*(str.end() - 1) == '\n') {
-                        str.pop_back();
-                        lines -= 1;
-                        cursor_symbol.setPosition(cursor_symbol.getPosition().x +
-                                                       ((static_cast<float>(str.size()-str.find_last_of('\n')-2))*15)+15,
-                                                  cursor_symbol.getPosition().y - 15);
-
-                        backspace = true;
-                    }
-
-                }
 //enter
-                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
-                    unsigned long long last_space = -1;
-                    if(lines != 0){
-                     last_space = str.find_last_of('\n');
-                    }
-                    str.push_back('\n');
-                    lines += 1;
-                    cursor_symbol.setPosition(cursor_symbol.getPosition().x-
-                                                        ((static_cast<float>(str.find_last_of('\n')-last_space))*15)+15,
-                                              cursor_symbol.getPosition().y+15); //cursor
+                    /*
+                            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)) {
+                                unsigned long long last_space = -1;
+                                if(lines != 0){
+                                 last_space = str.find_last_of('\n');
+                                }
+                                str.push_back('\n');
+                                lines += 1;
+                                cursor_symbol.setPosition(cursor_symbol.getPosition().x-
+                                                                    ((static_cast<float>(str.find_last_of('\n')-last_space))*
+                                                                    SYMBOL_SIZE1)+SYMBOL_SIZE1,
+                                                          cursor_symbol.getPosition().y+SYMBOL_SIZE1); //cursor
 
-                }
-
+                            }
+                    */
 //lines
-                if(cursor_symbol.getPosition().x == 1860 &&
-                                                !backspace){
-                    unsigned long long last_space = -1;
-                    if(lines != 0){
-                        last_space = str.find_last_of('\n');
+                    if(cursor_symbol.getPosition().x == 1860 &&
+                       !backspace){
+                        unsigned long long last_space = -1;
+                        if(lines != 0){
+                            last_space = str.find_last_of('\n');
+                        }
+                        str.push_back('\n');
+                        lines += 1;
+                        cursor_symbol.setPosition(cursor_symbol.getPosition().x-
+                                                  ((static_cast<float>(str.find_last_of('\n')-last_space))*
+                                                  SYMBOL_SIZE1)+SYMBOL_SIZE1,
+                                                  cursor_symbol.getPosition().y+SYMBOL_SIZE1); //cursor
                     }
-                    str.push_back('\n');
-                    lines += 1;
-                    cursor_symbol.setPosition(cursor_symbol.getPosition().x-
-                                              ((static_cast<float>(str.find_last_of('\n')-last_space))*15)+15,
-                                              cursor_symbol.getPosition().y+15); //cursor
                 }
-
                 break;
             }
             default: {
                 //other resolution...
             }
         }
-    }
     input_keyboard.setString(str);
     main.draw(input_keyboard);
     //cursor on screen
@@ -167,17 +188,81 @@ input_keyboard.setFillColor(sf::Color::Green);
 
 void System::set_system_message_settings() {
     system_message.setFont(font);
+    system_message.setCharacterSize(30);
     system_message.setFillColor(sf::Color::Red);
 }
 
 void System::system_commands() {
  if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter)){
-     if (str.empty()){
-        m_str = "Invalid command !!!";
-        system_message.setString(m_str);
-        system_message.setPosition(60, cursor_symbol.getPosition().y+100);
+     if (str == "a d m i n"){
+         admin = true;
+        system_welcome.setFillColor(sf::Color::Red);
+        cursor_symbol.setFillColor(sf::Color::Red);
+     } else if(str == "u s e r"){
+         admin = false;
+         system_welcome.setFillColor(sf::Color::Green);
+         cursor_symbol.setFillColor(sf::Color::Green);
+     } else if(admin && str == "exit"){
+         system_stop();
+     } else if(str == "4 8 15 16 23 42"){
+         pass_entered = true;
+         system_time.restart();
+         m_str = "SUCCESS !!!";
+         set_system_welcome(">:", 30);
+         set_cursor_settings(L"\u25a0", 50);
+         system_message.setFillColor(sf::Color::Red);
+         system_message.setString(m_str);
+         system_message.setPosition(system_welcome.getPosition().x, system_welcome.getPosition().y+SYMBOL_SIZE1*2);
+     }
+     else{
+         if (!str.empty()){
+         m_str = "Incorrect code !!!";
+         system_message.setFillColor(sf::Color::Red);
+         system_message.setString('"'+ str + '"' + ": " + m_str);
+         system_message.setPosition(system_welcome.getPosition().x, system_welcome.getPosition().y+SYMBOL_SIZE1*2);
+         }
      }
  }
- main.draw(system_message);
+
+if(pass_entered){if(system_time.getElapsedTime().asSeconds()>5)clear_after_pass();} //clear str and system message after
+                                                                                    //pass entered
+    main.draw(system_message);
+}
+
+void System::system_stop() {
+    exit(EXIT_SUCCESS);
+}
+
+void System::clear_after_pass() {
+        str.clear();
+        system_message.setString("");
+        pass_entered = false;
+}
+
+void System::time_is_up() {
+    std::wstring X0X = L"\u25B2";
+    std::wstring X1X = L"\u25B6";
+    std::wstring X2X = L"\u25BE";
+
+    system_welcome.setFillColor(sf::Color::Red);
+    system_welcome.setString(X0X+X1X);
+
+
+    cursor_symbol.setFillColor(sf::Color::Red);
+    cursor_symbol.setString(X2X);
+
+    input_keyboard.setFillColor(sf::Color::Red);
+
+    system_message.setPosition(system_welcome.getPosition().x, system_welcome.getPosition().y+SYMBOL_SIZE1*2);
+    system_message.setString("ATTENTION !!!, ATTENTION !!!, ATTENTION !!!, ATTENTION !!!");
+}
+
+void System::blow_up() {
+system_message.setString(*(bomb+bomb_counter));
+bomb_counter++;
+}
+
+System::~System() {
+delete[] bomb;
 }
 
