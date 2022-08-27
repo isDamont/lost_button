@@ -8,6 +8,7 @@
 #define SYMBOL_SIZE1 15
 
 #include <iostream>
+#include <sstream>
 #include <SFML/Graphics.hpp>
 
 class window{
@@ -29,11 +30,14 @@ private:
     sf::Text system_welcome;
     sf::Text input_keyboard;
     sf::Text system_message; // needs to get position (getting it from input())
+    sf::Text time_str;
     sf::Clock system_time;
     sf::Sprite background;
     int lines;
+    int minutes;
     bool admin;
     bool pass_entered;
+    bool did_minus;
     int bomb_counter;
     char *bomb;
 
@@ -42,12 +46,14 @@ private:
     void set_cursor_settings(const std::wstring& _cursor, unsigned int size);
     void set_input_settings();
     void set_system_message_settings();
+    void set_time_str_settings();
     void set_system_welcome(const std::string& _system_welcome, unsigned int size);
 
     void input(sf::Event _event);
     void system_commands();
     void time_is_up();
     void blow_up();
+    void time_on_screen();
     void clear_after_pass();
 public:
     System();

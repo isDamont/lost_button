@@ -12,11 +12,13 @@ int window::get_resolution() const {
 return resolution;
 }
 
-System::System() : lines(0), admin(false), pass_entered(false), bomb_counter(0), bomb(new char[42]) {
+System::System() : lines(0), admin(false), pass_entered(false), bomb_counter(0), bomb(new char[42]), minutes(108),
+did_minus(false) {
     set_font("../ttf/ModernDOS8x8.ttf");
     set_cursor_settings(L"\u25a0", 50);
     set_input_settings();
     set_system_message_settings();
+    set_time_str_settings();
     set_system_welcome(">:", 30);
     set_position(get_resolution());
     background.setColor(sf::Color::Black);
@@ -78,7 +80,7 @@ void System::system_start() {
         if(static_cast<int>(system_time.getElapsedTime().asSeconds())>6480){blow_up();}  //108 minute
 
         system_commands();
-
+        time_on_screen();
 
         main.display();
     }
@@ -264,5 +266,34 @@ bomb_counter++;
 
 System::~System() {
 delete[] bomb;
+}
+
+void System::time_on_screen() {
+
+    std::ostringstream to_str;
+
+    if(static_cast<int>(system_time.getElapsedTime().asSeconds())==0){
+        minutes = 108;
+    }
+
+     if(system_time.getElapsedTime().asSeconds()>1){
+    if(static_cast<int>(system_time.getElapsedTime().asSeconds())%60==0 && !did_minus){
+minutes--;
+        did_minus = true;
+    }
+     if(static_cast<int>(system_time.getElapsedTime().asSeconds())%61==0){
+             did_minus = false;
+         }
+     }
+     to_str << minutes;
+    time_str.setString(to_str.str());
+    main.draw(time_str);
+}
+
+void System::set_time_str_settings() {
+    time_str.setFont(font);
+    time_str.setCharacterSize(30);
+    time_str.setFillColor(sf::Color::Green);
+    time_str.setPosition(1850,0);
 }
 
